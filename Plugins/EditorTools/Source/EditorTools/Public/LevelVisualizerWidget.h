@@ -14,10 +14,21 @@ class EDITORTOOLS_API ULevelVisualizerWidget : public UEditorUtilityWidget
 {
 	GENERATED_BODY()
 	
-public:
-	ULevelVisualizerWidget();
-	~ULevelVisualizerWidget();
+public:	
+	virtual void NativeConstruct() override;
+
+	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
+	class UButton* Button_0;
+
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	class UTextBlock* SomeText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	class UAssetInsightWidget* InsightWidget;
 
 	UFUNCTION(BlueprintCallable)
 	void TestFunction();
+
+	UFUNCTION(BlueprintCallable)
+	void UpdateInsights();
 };
