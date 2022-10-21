@@ -14,11 +14,11 @@ void UAssetInsightWidget::NativeConstruct()
 	}
 }
 
-void UAssetInsightWidget::UpdateInsights(FText InText) 
+void UAssetInsightWidget::UpdateInsights(TArray<FText> InUpdates) 
 {
 	// Update member TextBlock widget text with selected asset insights
 	if (FileSizeText)
 	{
-		FileSizeText->SetText(InText);
+		FileSizeText->SetText(FText::FromString("File Size: " + InUpdates[0].ToString()));
 	}
 }

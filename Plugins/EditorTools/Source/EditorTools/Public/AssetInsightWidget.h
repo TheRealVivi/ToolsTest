@@ -21,5 +21,5 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget))
 	class UTextBlock* FileSizeText;
 
-	void UpdateInsights(FText InText); // TODO: add parameters with array of strings to update TextBlocks with
+	void UpdateInsights(TArray<FText> InUpdates); // TODO: add parameters with array of strings to update TextBlocks with
 };
