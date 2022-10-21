@@ -19,7 +19,10 @@ public:
 	virtual void NativeConstruct() override;
 
 	UPROPERTY(BlueprintReadOnly, meta=(BindWidget))
+	class UTextBlock* AssetNameText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UTextBlock* FileSizeText;
 
-	void UpdateInsights(TArray<FText> InUpdates); // TODO: add parameters with array of strings to update TextBlocks with
+	void UpdateInsights(TArray<FString> InUpdates); // TODO: add parameters with array of strings to update TextBlocks with
 };

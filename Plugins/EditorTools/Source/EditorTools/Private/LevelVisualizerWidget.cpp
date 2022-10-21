@@ -39,7 +39,7 @@ void ULevelVisualizerWidget::UpdateInsights()
 	UE_LOG(LogTemp, Warning, TEXT("UpdateInsights() called!"));
 
 	TArray<UObject*> SelectedObjects = UEditorUtilityLibrary::GetSelectedAssets();
-	TArray<FText> UpdateInfo;
+	TArray<FString> UpdateInfo;
 
 	FString objectDescription;
 	TMap<FName, UObject::FAssetRegistryTagMetadata> metadata;
@@ -64,7 +64,8 @@ void ULevelVisualizerWidget::UpdateInsights()
 		UE_LOG(LogTemp, Warning, TEXT("Num of Actors: %d"), subobjects.Num());
 		//UE_LOG(LogTemp, Warning, TEXT("Num of level script blueprints: %d"), TestLevel->GetLevelScriptBlueprint().Num());
 
-		UpdateInfo.Add(FText::FromString(FString::FromInt(SelectedObject->GetPackage()->GetFileSize()).Append(" bytes")));
+		UpdateInfo.Add(*SelectedObject->GetFName().ToString());
+		UpdateInfo.Add(FString::FromInt(SelectedObject->GetPackage()->GetFileSize()).Append(" bytes"));
 	}
 
 	/*
