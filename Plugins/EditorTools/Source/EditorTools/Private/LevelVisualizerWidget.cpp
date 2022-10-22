@@ -35,60 +35,30 @@ void ULevelVisualizerWidget::TestFunction()
 
 void ULevelVisualizerWidget::UpdateInsights()
 {
-
 	UE_LOG(LogTemp, Warning, TEXT("UpdateInsights() called!"));
 
-	TArray<UObject*> SelectedObjects = UEditorUtilityLibrary::GetSelectedAssets();
+	TArray<FAssetData> SelectedObjectsAssetData = UEditorUtilityLibrary::GetSelectedAssetData();
 	TArray<FString> UpdateInfo;
 
-	FString objectDescription;
-	TMap<FName, UObject::FAssetRegistryTagMetadata> metadata;
 
-	for (UObject* SelectedObject : SelectedObjects) 
+	for (FAssetData SelectedAssetData : SelectedObjectsAssetData) 
 	{
-
-		ULevel* TestLevel = (ULevel*)SelectedObject;
-		//int32 numOfActors;
-		TArray<UObject*> subobjects;
-		TestLevel->GetDefaultSubobjects(subobjects);
-
-		objectDescription = SelectedObject->GetDesc();
-		SelectedObject->GetAssetRegistryTagMetadata(metadata);
-		UE_LOG(LogTemp, Warning, TEXT("Desc: %s"), *SelectedObject->GetDesc());
-		UE_LOG(LogTemp, Warning, TEXT("Detailed Info: %s"), *SelectedObject->GetDetailedInfo());
-		UE_LOG(LogTemp, Warning, TEXT("Object name: %s"), *SelectedObject->GetFName().ToString()); // Literally prints assets name
-		UE_LOG(LogTemp, Warning, TEXT("File Size: %d"), SelectedObject->GetPackage()->GetFileSize());
-		UE_LOG(LogTemp, Warning, TEXT("Num of level blueprints: %d"), TestLevel->GetLevelBlueprints().Num());
-		UE_LOG(LogTemp, Warning, TEXT("Num of Actors: %d"), TestLevel->Actors.Num()); // fix
-		UE_LOG(LogTemp, Warning, TEXT("Num of Actors: %d"), TestLevel->ActorsForGC.Num()); // fix
-		UE_LOG(LogTemp, Warning, TEXT("Num of Actors: %d"), subobjects.Num());
-		//UE_LOG(LogTemp, Warning, TEXT("Num of level script blueprints: %d"), TestLevel->GetLevelScriptBlueprint().Num());
-
-		UpdateInfo.Add(*SelectedObject->GetFName().ToString());
-		UpdateInfo.Add(FString::FromInt(SelectedObject->GetPackage()->GetFileSize()).Append(" bytes"));
-	}
-
-	/*
-	for (const TPair<FName, UObject::FAssetRegistryTagMetadata>& pair : metadata) 
-	{
-		if (InsightWidget)
+		UE_LOG(LogTemp, Warning, TEXT("Asset Class Type: %s"), *SelectedAssetData.AssetClass.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Asset Name: %s"), *SelectedAssetData.AssetName.ToString());
+		UWorld* world = Cast<UWorld>(SelectedAssetData.GetAsset());
+		if (world) 
 		{
-			//InsightWidget->UpdateInsights(FText::FromString(pair.Key.ToString()));
-			InsightWidget->UpdateInsights(FText::FromString(pair.Value.ImportantValue));
+			//FVector worldCenter = world->GetModel()->GetCenter();
+			UE_LOG(LogTemp, Warning, TEXT("Actor count in world: %d"), world->GetActorCount());
+			UE_LOG(LogTemp, Warning, TEXT("Level actor count: %d"), world->GetCurrentLevel()->Actors.Num());
+			//UE_LOG(LogTemp, Warning, TEXT("World Center vector: %f %f"), worldCenter.X, worldCenter.Y);
 		}
+		SelectedAssetData.PrintAssetData();
 
-		FString test = pair.Key.ToString();
-
-		
-		UE_LOG(LogTemp, Warning, TEXT("Key is %s"), *test);
-		UE_LOG(LogTemp, Warning, TEXT("Value Name is %s"), *pair.Value.DisplayName.ToString());
-		UE_LOG(LogTemp, Warning, TEXT("Value is %s"), *pair.Value.ImportantValue);
-		UE_LOG(LogTemp, Warning, TEXT("Value suffix is %s"), *pair.Value.Suffix.ToString());
-		UE_LOG(LogTemp, Warning, TEXT("Value tooltip text is %s"), *pair.Value.TooltipText.ToString());
-		
-		//UE_LOG(LogTemp, Warning, TEXT("hey"));
+		UpdateInfo.Add(*SelectedAssetData.AssetName.ToString());
+		UpdateInfo.Add(FString::FromInt(SelectedAssetData.GetPackage()->GetFileSize()).Append(" bytes"));
 	}
-	*/
+
 
 	
 	if (InsightWidget) 
