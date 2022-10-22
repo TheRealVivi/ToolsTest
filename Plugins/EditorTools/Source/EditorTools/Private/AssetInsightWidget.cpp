@@ -17,6 +17,16 @@ void UAssetInsightWidget::NativeConstruct()
 	{
 		FileSizeText->SetText(FText::FromString(TEXT("File Size: N/A")));
 	}
+
+	if (NumOfActorsText) 
+	{
+		NumOfActorsText->SetText(FText::FromString(TEXT("# Actors: N/A")));
+	}
+
+	if (NumOfBlueprintsText)
+	{
+		NumOfBlueprintsText->SetText(FText::FromString(TEXT("# Blueprints: N/A")));
+	}
 }
 
 void UAssetInsightWidget::UpdateInsights(TArray<FString> InUpdates) 
@@ -29,6 +39,16 @@ void UAssetInsightWidget::UpdateInsights(TArray<FString> InUpdates)
 
 	if (FileSizeText)
 	{
-		FileSizeText->SetText(FText::FromString("File Size: " + InUpdates[1] ));
+		FileSizeText->SetText(FText::FromString("File Size: " + InUpdates[1]));
+	}
+
+	if (NumOfActorsText)
+	{
+		NumOfActorsText->SetText(FText::FromString("# Actors: " + InUpdates[2]));
+	}
+
+	if (NumOfBlueprintsText)
+	{
+		NumOfBlueprintsText->SetText(FText::FromString("# Blueprints: " + InUpdates[3]));
 	}
 }

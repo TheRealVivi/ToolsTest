@@ -40,26 +40,33 @@ void ULevelVisualizerWidget::UpdateInsights()
 	TArray<FAssetData> SelectedObjectsAssetData = UEditorUtilityLibrary::GetSelectedAssetData();
 	TArray<FString> UpdateInfo;
 
-
-	for (FAssetData SelectedAssetData : SelectedObjectsAssetData) 
+	//FVector worldCenter = world->GetModel()->GetCenter();
+	if (SelectedObjectsAssetData.Num() == 1) 
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Asset Class Type: %s"), *SelectedAssetData.AssetClass.ToString());
-		UE_LOG(LogTemp, Warning, TEXT("Asset Name: %s"), *SelectedAssetData.AssetName.ToString());
+		FAssetData SelectedAssetData = SelectedObjectsAssetData[0];
+		SelectedAssetData.PrintAssetData();
 		UWorld* world = Cast<UWorld>(SelectedAssetData.GetAsset());
+		int32 numOfActors, numOfBlueprints = 0;
+
 		if (world) 
 		{
-			//FVector worldCenter = world->GetModel()->GetCenter();
-			UE_LOG(LogTemp, Warning, TEXT("Actor count in world: %d"), world->GetActorCount());
-			UE_LOG(LogTemp, Warning, TEXT("Level actor count: %d"), world->GetCurrentLevel()->Actors.Num());
-			//UE_LOG(LogTemp, Warning, TEXT("World Center vector: %f %f"), worldCenter.X, worldCenter.Y);
+			TArray<AActor*> LevelActors = world->GetCurrentLevel()->Actors;
+			numOfActors = LevelActors.Num();
+
+
+
+			for (AActor* a : LevelActors)
+			{
+				if (a->GetFName().ToString().StartsWith("BP_") || a->GetFName().ToString().StartsWith("Blueprint_"))
+					numOfBlueprints++;
+			}
 		}
-		SelectedAssetData.PrintAssetData();
 
 		UpdateInfo.Add(*SelectedAssetData.AssetName.ToString());
 		UpdateInfo.Add(FString::FromInt(SelectedAssetData.GetPackage()->GetFileSize()).Append(" bytes"));
+		UpdateInfo.Add(FString::FromInt(numOfActors));
+		UpdateInfo.Add(FString::FromInt(numOfBlueprints));
 	}
-
-
 	
 	if (InsightWidget) 
 	{
