@@ -39,38 +39,48 @@ void ULevelVisualizerWidget::UpdateInsights()
 
 	TArray<FAssetData> SelectedObjectsAssetData = UEditorUtilityLibrary::GetSelectedAssetData();
 	TArray<FString> UpdateInfo;
+	FVector3d levelSize;
 
-	//FVector worldCenter = world->GetModel()->GetCenter();
-	if (SelectedObjectsAssetData.Num() == 1) 
+	
+	if (SelectedObjectsAssetData.Num() != 1)
+		return;
+
+
+	FAssetData SelectedAssetData = SelectedObjectsAssetData[0];
+	SelectedAssetData.PrintAssetData();
+	UWorld* world = Cast<UWorld>(SelectedAssetData.GetAsset());
+	int32 numOfActors, numOfBlueprints = 0;
+
+	if (world) 
 	{
-		FAssetData SelectedAssetData = SelectedObjectsAssetData[0];
-		SelectedAssetData.PrintAssetData();
-		UWorld* world = Cast<UWorld>(SelectedAssetData.GetAsset());
-		int32 numOfActors, numOfBlueprints = 0;
+		FBox levelBounds;
+		TArray<AActor*> LevelActors = world->GetCurrentLevel()->Actors;
+		ULevel::GetLevelBoundsFromAsset(SelectedAssetData, levelBounds);
 
-		if (world) 
+		levelSize = levelBounds.GetSize();
+
+		//world->GetCurrentLevel()->MapBuildData;
+
+		numOfActors = LevelActors.Num();
+		//FVector worldCenter = world->GetModel()->GetCenter();
+		for (AActor* a : LevelActors)
 		{
-			TArray<AActor*> LevelActors = world->GetCurrentLevel()->Actors;
-			numOfActors = LevelActors.Num();
-
-
-
-			for (AActor* a : LevelActors)
-			{
-				if (a->GetFName().ToString().StartsWith("BP_") || a->GetFName().ToString().StartsWith("Blueprint_"))
-					numOfBlueprints++;
-			}
+			UE_LOG(LogTemp, Warning, TEXT("Actor name: %s"), *a->GetFName().ToString());
+			if (a->GetFName().ToString().StartsWith("BP_") || a->GetFName().ToString().StartsWith("Blueprint_"))
+				numOfBlueprints++;
 		}
 
-		UpdateInfo.Add(*SelectedAssetData.AssetName.ToString());
-		UpdateInfo.Add(FString::FromInt(SelectedAssetData.GetPackage()->GetFileSize()).Append(" bytes"));
-		UpdateInfo.Add(FString::FromInt(numOfActors));
-		UpdateInfo.Add(FString::FromInt(numOfBlueprints));
+		UE_LOG(LogTemp, Warning, TEXT("Level size: %s"), *levelSize.ToString());
 	}
+
+	UpdateInfo.Add(*SelectedAssetData.AssetName.ToString());
+	UpdateInfo.Add(FString::FromInt(SelectedAssetData.GetPackage()->GetFileSize()).Append(" bytes"));
+	UpdateInfo.Add(FString::FromInt(numOfActors));
+	UpdateInfo.Add(FString::FromInt(numOfBlueprints));
+	UpdateInfo.Add(levelSize.ToString());
 	
 	if (InsightWidget) 
 	{
 		InsightWidget->UpdateInsights(UpdateInfo);
 	}
-	
 }

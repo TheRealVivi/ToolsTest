@@ -27,6 +27,11 @@ void UAssetInsightWidget::NativeConstruct()
 	{
 		NumOfBlueprintsText->SetText(FText::FromString(TEXT("# Blueprints: N/A")));
 	}
+
+	if (MapSizeText) 
+	{
+		MapSizeText->SetText(FText::FromString(TEXT("Cartesean Size: N/A")));
+	}
 }
 
 void UAssetInsightWidget::UpdateInsights(TArray<FString> InUpdates) 
@@ -50,5 +55,10 @@ void UAssetInsightWidget::UpdateInsights(TArray<FString> InUpdates)
 	if (NumOfBlueprintsText)
 	{
 		NumOfBlueprintsText->SetText(FText::FromString("# Blueprints: " + InUpdates[3]));
+	}
+
+	if (MapSizeText) 
+	{
+		MapSizeText->SetText(FText::FromString("Cartesean Size: " + InUpdates[4]));
 	}
 }

@@ -39,5 +39,8 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UTextBlock* NumOfBlueprintsText;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	class UTextBlock* MapSizeText;
+
 	void UpdateInsights(TArray<FString> InUpdates); // TODO: add parameters with array of strings to update TextBlocks with
 };
