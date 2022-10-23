@@ -20,9 +20,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
 	class UButton* Button_0;
 
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	class UTextBlock* SomeText;
-
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UAssetInsightWidget* InsightWidget;
 

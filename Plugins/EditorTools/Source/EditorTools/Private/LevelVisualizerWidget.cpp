@@ -17,15 +17,7 @@ void ULevelVisualizerWidget::NativeConstruct()
 	{
 		Button_0->OnClicked.AddDynamic(this, &ThisClass::UpdateInsightWidget);
 		Button_0->SetRenderOpacity(.2f);
-	}
-
-	if (SomeText) 
-	{
-		SomeText->SetText(FText::FromString(TEXT("Hello world! lolol")));
-		SomeText->SetOpacity(.1f);
-	}
-
-	
+	}	
 }
 
 void ULevelVisualizerWidget::UpdateInsightWidget() 
