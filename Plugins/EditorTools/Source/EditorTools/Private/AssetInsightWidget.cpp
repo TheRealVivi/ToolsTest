@@ -46,7 +46,7 @@ void UAssetInsightWidget::UpdateTextBlocks(TArray<FString> InUpdates)
 
 	if (FileSizeText)
 	{
-		FileSizeText->SetText(FText::FromString("File Size: " + InUpdates[1]));
+		FileSizeText->SetText(FText::FromString("File Size: " + InUpdates[1] + " bytes"));
 	}
 
 	if (NumOfActorsText)
@@ -76,6 +76,7 @@ FBox UAssetInsightWidget::CalculateLevelBounds(const ULevel* InLevel)
 		for (int32 ActorIndex = 0; ActorIndex < InLevel->Actors.Num(); ++ActorIndex)
 		{
 			AActor* Actor = InLevel->Actors[ActorIndex];
+			
 			if (Actor && Actor->IsLevelBoundsRelevant())
 			{
 				// Sum up components bounding boxes
@@ -91,69 +92,96 @@ FBox UAssetInsightWidget::CalculateLevelBounds(const ULevel* InLevel)
 	return LevelBounds;
 }
 
-/** TODO: Refactor in to specific encapsulated functions
- *  TODO: Pull actor info from MapBuildData for levels that store data in MapBuildData classes
+/** 
+ *  TODO: Pull actor info from External packages to cover external package user case
 */
 void UAssetInsightWidget::UpdateInsights()
 {
 	UE_LOG(LogTemp, Warning, TEXT("UpdateInsights() called!"));
 
 	TArray<FAssetData> SelectedObjectsAssetData = UEditorUtilityLibrary::GetSelectedAssetData();
-	TArray<FString> UpdateInfo;
-	FVector3d levelSize;
-
-
+	
 	if (SelectedObjectsAssetData.Num() != 1)
 		return;
 
-
+	TArray<FString> UpdateInfo;
 	FAssetData SelectedAssetData = SelectedObjectsAssetData[0];
-	SelectedAssetData.PrintAssetData();
 	UWorld* world = Cast<UWorld>(SelectedAssetData.GetAsset());
-	int32 numOfActors, numOfBlueprints = 0;
 
 	if (world)
 	{
-		FBox levelBounds;
-		TArray<AActor*> LevelActors = world->GetCurrentLevel()->Actors;
-
-		FString LevelBoundsLocationStr;
-		static const FName NAME_LevelBoundsLocation(TEXT("LevelBoundsLocation"));
-
-		FString LevelBoundsExtentStr;
-		static const FName NAME_LevelBoundsExtent(TEXT("LevelBoundsExtent"));
-
-		if (SelectedAssetData.GetTagValue(NAME_LevelBoundsLocation, LevelBoundsLocationStr) &&
-			SelectedAssetData.GetTagValue(NAME_LevelBoundsExtent, LevelBoundsExtentStr))
+		
+		if(world->GetCurrentLevel()->IsUsingExternalActors()) 
 		{
-			ULevel::GetLevelBoundsFromAsset(SelectedAssetData, levelBounds);
+			UE_LOG(LogTemp, Warning, TEXT("Is using external actors"));
+			UE_LOG(LogTemp, Warning, TEXT("Num of actors from external package: %d"), world->GetCurrentLevel()->Actors.Num());
+			
+		}			
+
+		UpdateInfo.Add(*SelectedAssetData.AssetName.ToString());
+		UpdateInfo.Add(FString::FromInt(SelectedAssetData.GetPackage()->GetFileSize()));
+		UpdateInfo.Add(FString::FromInt(world->GetCurrentLevel()->Actors.Num()));
+		UpdateInfo.Add(FString::FromInt(GetNumBlueprintsInLevel(world->GetCurrentLevel())));
+		UpdateInfo.Add(GetLevelBounds(world->GetCurrentLevel(), &SelectedAssetData).ToString());
+	}
+
+	UpdateTextBlocks(UpdateInfo);
+}
+
+/** Checks each actor in level to see if it is attached to a blueprint; returns -1 if InLevel is null*/
+int32 UAssetInsightWidget::GetNumBlueprintsInLevel(const ULevel* InLevel) 
+{
+	int32 numOfBlueprints = -1;
+
+	if (InLevel) 
+	{
+		//UMapBuildDataRegistry* mapData = InLevel->MapBuildData.Get();
+
+		numOfBlueprints = 0;
+		TArray<AActor*> LevelActors = InLevel->Actors;
+
+		for (AActor* a : LevelActors)
+		{
+			if (a->GetArchetype()->IsInBlueprint())
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("part of blueprint: %s"), *a->GetFName().ToString());
+				numOfBlueprints++;
+			}
+		}
+	}
+
+	return numOfBlueprints;
+}
+
+/** Checks if level's asset data has tag values for level bounds, if not, calculates them
+ *  Returns level bounds as a FVector3d
+*/
+FVector3d UAssetInsightWidget::GetLevelBounds(const ULevel* InLevel, FAssetData* LevelAssetData)
+{
+	FVector3d levelSize;
+	FBox levelBounds;
+
+	FString LevelBoundsLocationStr;
+	static const FName NAME_LevelBoundsLocation(TEXT("LevelBoundsLocation"));
+
+	FString LevelBoundsExtentStr;
+	static const FName NAME_LevelBoundsExtent(TEXT("LevelBoundsExtent"));
+
+	if (LevelAssetData && InLevel) 
+	{
+
+		if (LevelAssetData->GetTagValue(NAME_LevelBoundsLocation, LevelBoundsLocationStr) &&
+			LevelAssetData->GetTagValue(NAME_LevelBoundsExtent, LevelBoundsExtentStr))
+		{
+			ULevel::GetLevelBoundsFromAsset(*LevelAssetData, levelBounds);
 		}
 		else
 		{
-			levelBounds = CalculateLevelBounds(world->GetCurrentLevel());
+			levelBounds = CalculateLevelBounds(InLevel);
 		}
-
-		levelSize = levelBounds.GetSize();
-
-		//world->GetCurrentLevel()->MapBuildData;
-
-		numOfActors = LevelActors.Num();
-		//FVector worldCenter = world->GetModel()->GetCenter();
-		for (AActor* a : LevelActors)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Actor name: %s"), *a->GetFName().ToString());
-			if (a->GetFName().ToString().StartsWith("BP_") || a->GetFName().ToString().StartsWith("Blueprint_"))
-				numOfBlueprints++;
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("Level size: %s"), *levelSize.ToString());
 	}
 
-	UpdateInfo.Add(*SelectedAssetData.AssetName.ToString());
-	UpdateInfo.Add(FString::FromInt(SelectedAssetData.GetPackage()->GetFileSize()).Append(" bytes"));
-	UpdateInfo.Add(FString::FromInt(numOfActors));
-	UpdateInfo.Add(FString::FromInt(numOfBlueprints));
-	UpdateInfo.Add(levelSize.ToString());
+	levelSize = levelBounds.GetSize();
 
-	UpdateTextBlocks(UpdateInfo);
+	return levelSize;
 }
