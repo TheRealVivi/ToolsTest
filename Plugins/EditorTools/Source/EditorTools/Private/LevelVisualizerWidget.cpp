@@ -55,7 +55,22 @@ void ULevelVisualizerWidget::UpdateInsights()
 	{
 		FBox levelBounds;
 		TArray<AActor*> LevelActors = world->GetCurrentLevel()->Actors;
-		ULevel::GetLevelBoundsFromAsset(SelectedAssetData, levelBounds);
+
+		FString LevelBoundsLocationStr;
+		static const FName NAME_LevelBoundsLocation(TEXT("LevelBoundsLocation"));
+
+		FString LevelBoundsExtentStr;
+		static const FName NAME_LevelBoundsExtent(TEXT("LevelBoundsExtent"));
+
+		if (SelectedAssetData.GetTagValue(NAME_LevelBoundsLocation, LevelBoundsLocationStr) &&
+			SelectedAssetData.GetTagValue(NAME_LevelBoundsExtent, LevelBoundsExtentStr)) 
+		{
+			ULevel::GetLevelBoundsFromAsset(SelectedAssetData, levelBounds);
+		}
+		else 
+		{
+			levelBounds = CalculateLevelBounds(world->GetCurrentLevel());
+		}
 
 		levelSize = levelBounds.GetSize();
 
@@ -83,4 +98,29 @@ void ULevelVisualizerWidget::UpdateInsights()
 	{
 		InsightWidget->UpdateInsights(UpdateInfo);
 	}
+}
+
+FBox ULevelVisualizerWidget::CalculateLevelBounds(const ULevel* InLevel)
+{
+	FBox LevelBounds(ForceInit);
+
+	if (InLevel)
+	{
+		// Iterate over all level actors
+		for (int32 ActorIndex = 0; ActorIndex < InLevel->Actors.Num(); ++ActorIndex)
+		{
+			AActor* Actor = InLevel->Actors[ActorIndex];
+			if (Actor && Actor->IsLevelBoundsRelevant())
+			{
+				// Sum up components bounding boxes
+				FBox ActorBox = Actor->GetComponentsBoundingBox(true);
+				if (ActorBox.IsValid)
+				{
+					LevelBounds += ActorBox;
+				}
+			}
+		}
+	}
+
+	return LevelBounds;
 }

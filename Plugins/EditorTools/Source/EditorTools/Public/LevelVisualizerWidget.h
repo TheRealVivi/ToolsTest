@@ -31,4 +31,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void UpdateInsights();
+
+private:
+	FBox CalculateLevelBounds(const ULevel* InLevel);
 };
