@@ -16,7 +16,8 @@ enum class ETextBlockTypes : uint8
 };
 
 /**
- * 
+ * User widget that contains import metrics related to selected asset
+ * NOTE: Currently only applicable to ULevel/UWorld assets
  */
 UCLASS()
 class EDITORTOOLS_API UAssetInsightWidget : public UUserWidget
@@ -42,5 +43,15 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UTextBlock* MapSizeText;
 
-	void UpdateInsights(TArray<FString> InUpdates); // TODO: add parameters with array of strings to update TextBlocks with
+	/** TODO: Refactor in to specific encapsulated functions
+	 *  TODO: Pull actor info from MapBuildData for levels that store data in MapBuildData classes */
+	void UpdateInsights();
+
+private:
+
+	/** Updates widget text blocks with data from parameter array */
+	void UpdateTextBlocks(TArray<FString> InUpdates);
+
+	/** Copy/paste from FLevelBounds class. */
+	FBox CalculateLevelBounds(const ULevel* InLevel);
 };

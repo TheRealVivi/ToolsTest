@@ -27,11 +27,5 @@ public:
 	class UAssetInsightWidget* InsightWidget;
 
 	UFUNCTION(BlueprintCallable)
-	void TestFunction();
-
-	UFUNCTION(BlueprintCallable)
-	void UpdateInsights();
-
-private:
-	FBox CalculateLevelBounds(const ULevel* InLevel);
+	void UpdateInsightWidget();
 };
