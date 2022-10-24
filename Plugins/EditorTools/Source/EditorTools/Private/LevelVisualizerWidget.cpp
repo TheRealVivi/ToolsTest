@@ -16,7 +16,6 @@ void ULevelVisualizerWidget::NativeConstruct()
 	if (Button_0) 
 	{
 		Button_0->OnClicked.AddDynamic(this, &ThisClass::UpdateInsightWidget);
-		Button_0->SetRenderOpacity(.2f);
 	}	
 }
 
