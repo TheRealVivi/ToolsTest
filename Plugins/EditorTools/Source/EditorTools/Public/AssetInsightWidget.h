@@ -6,15 +6,6 @@
 #include "Blueprint/UserWidget.h"
 #include "AssetInsightWidget.generated.h"
 
-UENUM()
-enum class ETextBlockTypes : uint8
-{
-	ASSET_NAME_TEXT = 0,
-	FILE_SIZE_TEXT,
-	NUM_ACTORS_TEXT,
-	NUM_BLUEPRINTS_TEXT,
-};
-
 /**
  * User widget that contains import metrics related to selected asset
  * NOTE: Currently only applicable to ULevel/UWorld assets
