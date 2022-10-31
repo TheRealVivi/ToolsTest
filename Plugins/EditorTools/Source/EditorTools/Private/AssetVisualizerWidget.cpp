@@ -7,13 +7,14 @@
 void UAssetVisualizerWidget::ReleaseSlateResources(bool bReleaseChildren)
 {
 	Super::ReleaseSlateResources(bReleaseChildren);
-
+	UE_LOG(LogTemp, Warning, TEXT("ReleaseSlateResources! %d"), this->GetUniqueID());
 	MyAssetVisualizerWidget.Reset();
 }
 
 void UAssetVisualizerWidget::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
+	UE_LOG(LogTemp, Warning, TEXT("SynchronizeProperties!"));
 	if (MyAssetVisualizerWidget)
 	{
 		MyAssetVisualizerWidget->SetDisplayedText(Text);
@@ -22,6 +23,7 @@ void UAssetVisualizerWidget::SynchronizeProperties()
 
 TSharedRef<SWidget> UAssetVisualizerWidget::RebuildWidget()
 {
+	UE_LOG(LogTemp, Warning, TEXT("RebuildWidget!"));
 	MyAssetVisualizerWidget = SNew(SAssetVisualizerWidget)
 		.DisplayedText(Text);
 

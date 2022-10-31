@@ -3,6 +3,7 @@
 
 #include "SAssetVisualizerWidget.h"
 #include "SlateOptMacros.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
@@ -12,6 +13,17 @@ void SAssetVisualizerWidget::Construct(const FArguments& InArgs)
 
 	ChildSlot
 	[
+		/*
+		SNew(SConstraintCanvas)
+		+SConstraintCanvas::Slot()
+		[
+			//SNew(SImage)
+			//.Image()
+			//SAssignNew(TextBlock, STextBlock)
+			//.Text(InArgs._DisplayedText)
+		]
+		*/
+		
 		SNew(SVerticalBox)
 		+SVerticalBox::Slot()
 		.AutoHeight()
@@ -19,6 +31,7 @@ void SAssetVisualizerWidget::Construct(const FArguments& InArgs)
 			SAssignNew(TextBlock, STextBlock)
 			.Text(InArgs._DisplayedText)
 		]
+		
 	];
 }
 

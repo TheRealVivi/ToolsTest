@@ -7,7 +7,11 @@
 		{
 			"Name": "ToolsTest",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Slate",
+				"SlateCore"
+			]
 		}
 	],
 	"Plugins": [

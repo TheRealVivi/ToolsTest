@@ -34,22 +34,32 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UTextBlock* MapSizeText;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	class UTextBlock* ActorHierarchyDetails;
+
+	//UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	//class UHorizontalExpandingListWidget* ActorHierarchyDetails;
+
 	/** TODO: Pull actor info from External packages to cover external package user case */
 	void UpdateInsights();
 
 protected:
 
 	/** Updates widget text blocks with data from parameter array */
-	void UpdateTextBlocks(TArray<FString> InUpdates);
+	void UpdateTextBlocks(TArray<FString> InUpdates, TArray<FString> InHierarchyUpdates);
+
+	FString UpdateHierarchyDetails(TArray<FString> InHierarchyUpdates);
 
 	/** Copy/paste from FLevelBounds class. */
 	FBox CalculateLevelBounds(const ULevel* InLevel);
+
+	TMap<FString, FBox> CalculateLevelHierarchyBounds(const ULevel* InLevel);
 
 	/** Checks if level's asset data has tag values for level bounds, if not, calculates them
 	 *  Returns level bounds as a FVector3d
 	*/
 	FVector3d GetLevelBounds(const ULevel* InLevel, FAssetData* LevelAssetData);
 
-	/** Checks each actor in level to see if it is attached to a blueprint; returns -1 if InLevel is null*/
+	/** Checks each actor in level to see if it is attached to a blueprint; returns -1 if InLevel is null */
 	int32 GetNumBlueprintsInLevel(const ULevel* InLevel);
 };

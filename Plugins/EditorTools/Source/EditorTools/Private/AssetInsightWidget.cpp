@@ -3,6 +3,7 @@
 
 #include "AssetInsightWidget.h"
 #include "Components/TextBlock.h"
+#include "HorizontalExpandingListWidget.h"
 #include "EditorUtilityLibrary.h"
 
 void UAssetInsightWidget::NativeConstruct() 
@@ -33,10 +34,24 @@ void UAssetInsightWidget::NativeConstruct()
 	{
 		MapSizeText->SetText(FText::FromString(TEXT("Cartesean Size: N/A")));
 	}
+
+	if (ActorHierarchyDetails) 
+	{
+		ActorHierarchyDetails->SetText(FText::FromString(TEXT("Actor Hierarchy Details: N/A")));
+	}
+	
+	/*
+	if (ActorHierarchyDetails) 
+	{
+		TArray<FString> DefaultData = { "Hierarchy size: N/A", "Select level asset to load" };
+		ActorHierarchyDetails->SetTextForTextBlocks(DefaultData);
+	}
+	*/
+	
 }
 
 /** Updates widget text blocks with data from parameter array */
-void UAssetInsightWidget::UpdateTextBlocks(TArray<FString> InUpdates) 
+void UAssetInsightWidget::UpdateTextBlocks(TArray<FString> InUpdates, TArray<FString> InHierarchyUpdates) 
 {
 	// Update member TextBlock widget text with selected asset insights
 	if (AssetNameText) 
@@ -63,6 +78,30 @@ void UAssetInsightWidget::UpdateTextBlocks(TArray<FString> InUpdates)
 	{
 		MapSizeText->SetText(FText::FromString("Cartesean Size: " + InUpdates[4]));
 	}
+
+	if (ActorHierarchyDetails) 
+	{
+		ActorHierarchyDetails->SetText(FText::FromString(UpdateHierarchyDetails(InHierarchyUpdates)));
+	}
+}
+
+FString UAssetInsightWidget::UpdateHierarchyDetails(TArray<FString> InHierarchyUpdates) 
+{
+	FString HierarchyDetails = "";
+
+	if (!InHierarchyUpdates.IsEmpty()) 
+	{
+		for (FString Detail : InHierarchyUpdates)
+		{
+			HierarchyDetails += Detail + "\n";
+		}
+	}
+	else
+	{
+		HierarchyDetails = "No hierarchy details to display.";
+	}
+
+	return HierarchyDetails;
 }
 
 /** Copy/paste from FLevelBounds class. */
@@ -92,6 +131,37 @@ FBox UAssetInsightWidget::CalculateLevelBounds(const ULevel* InLevel)
 	return LevelBounds;
 }
 
+TMap<FString, FBox> UAssetInsightWidget::CalculateLevelHierarchyBounds(const ULevel* InLevel)
+{
+	TMap<FString, FBox> HierarchyBounds;
+	// Calculate hierarchy bounds using folders
+	if (InLevel->IsUsingActorFolders())
+	{
+		// use a TMap<Folder Name, Bounds> to calculate hierarchy bounds
+
+		for (AActor* Actor : InLevel->Actors)
+		{
+			FString ActorFolderName = Actor->GetFolder().ToString();
+			if (!HierarchyBounds.Contains(ActorFolderName))
+			{
+				HierarchyBounds.Add(ActorFolderName, Actor->GetComponentsBoundingBox());
+				//UE_LOG(LogTemp, Warning, TEXT("Newly added Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
+			}
+			else
+			{
+				HierarchyBounds[ActorFolderName] += Actor->GetComponentsBoundingBox();
+				//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
+			}
+
+			//UE_LOG(LogTemp, Warning, TEXT("Folder name: %s"), *Actor->GetFolder().ToString());
+		}
+
+	}
+	return HierarchyBounds;
+}
+
+
+
 /** 
  *  TODO: Pull actor info from External packages to cover external package user case
 */
@@ -105,27 +175,44 @@ void UAssetInsightWidget::UpdateInsights()
 		return;
 
 	TArray<FString> UpdateInfo;
+	TArray<FString> HierarchySizeDetails;
 	FAssetData SelectedAssetData = SelectedObjectsAssetData[0];
-	UWorld* world = Cast<UWorld>(SelectedAssetData.GetAsset());
+	UWorld* World = Cast<UWorld>(SelectedAssetData.GetAsset());
 
-	if (world)
+	if (World)
 	{
+		ULevel* Level = World->GetCurrentLevel();
+
+		TMap<FString, FBox> HierarchyBounds = CalculateLevelHierarchyBounds(Level);
+
 		
-		if(world->GetCurrentLevel()->IsUsingExternalActors()) 
+		//HierarchySizeDetails.Reserve(HierarchyBounds.Num());
+
+		for (TPair<FString, FBox> HierarchyBoundPair : HierarchyBounds) 
+		{
+			HierarchySizeDetails.Add(HierarchyBoundPair.Key + ": " + HierarchyBoundPair.Value.GetSize().ToString());
+		}
+
+		if(Level->IsUsingExternalActors()) 
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Is using external actors"));
-			UE_LOG(LogTemp, Warning, TEXT("Num of actors from external package: %d"), world->GetCurrentLevel()->Actors.Num());
+			UE_LOG(LogTemp, Warning, TEXT("Num of actors from external package: %d"), Level->Actors.Num());
 			
 		}			
 
 		UpdateInfo.Add(*SelectedAssetData.AssetName.ToString());
 		UpdateInfo.Add(FString::FromInt(SelectedAssetData.GetPackage()->GetFileSize()));
-		UpdateInfo.Add(FString::FromInt(world->GetCurrentLevel()->Actors.Num()));
-		UpdateInfo.Add(FString::FromInt(GetNumBlueprintsInLevel(world->GetCurrentLevel())));
-		UpdateInfo.Add(GetLevelBounds(world->GetCurrentLevel(), &SelectedAssetData).ToString());
+		UpdateInfo.Add(FString::FromInt(Level->Actors.Num()));
+		UpdateInfo.Add(FString::FromInt(GetNumBlueprintsInLevel(Level)));
+		UpdateInfo.Add(GetLevelBounds(Level, &SelectedAssetData).ToString());
+
+		UE_LOG(LogTemp, Warning, TEXT("HierarchySizeDetails size: %d"), HierarchySizeDetails.Num());
+		//ActorHierarchyDetails->SetTextForTextBlocks(HierarchySizeDetails);
+		//ActorHierarchyDetails->UpdateWidget();
+		//UE_LOG(LogTemp, Warning, TEXT("ActorHierarchySizeDetails size: %d"), ActorHierarchyDetails->TextForTextBlocks.Num());
 	}
 
-	UpdateTextBlocks(UpdateInfo);
+	UpdateTextBlocks(UpdateInfo, HierarchySizeDetails);
 }
 
 /** Checks each actor in level to see if it is attached to a blueprint; returns -1 if InLevel is null*/
@@ -135,8 +222,6 @@ int32 UAssetInsightWidget::GetNumBlueprintsInLevel(const ULevel* InLevel)
 
 	if (InLevel) 
 	{
-		//UMapBuildDataRegistry* mapData = InLevel->MapBuildData.Get();
-
 		numOfBlueprints = 0;
 		TArray<AActor*> LevelActors = InLevel->Actors;
 
