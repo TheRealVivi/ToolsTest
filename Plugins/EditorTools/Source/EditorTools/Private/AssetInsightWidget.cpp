@@ -5,6 +5,7 @@
 #include "Components/TextBlock.h"
 #include "HorizontalExpandingListWidget.h"
 #include "EditorUtilityLibrary.h"
+#include "Runtime/AssetRegistry/Public/AssetRegistry/AssetRegistryModule.h"
 
 void UAssetInsightWidget::NativeConstruct() 
 {
@@ -86,14 +87,50 @@ void UAssetInsightWidget::UpdateInsights(bool bInIncludeNonColliding)
 		/* Attempting to gather external actor details
 		 * Able to get total number of external actors when not loaded, 
 		 * Searching how to load these details into an actor and gather more info
+		 */
+		/*
 		int32 NumExternalActors = 0;
 		if (Level->IsUsingExternalActors())
 		{	
 			TArray<FString> ExternalActorPacks = Level->GetOnDiskExternalActorPackages();
+			TArray<FName> ExternalActorPaths;
+			for (FString ExternalActorPack : ExternalActorPacks) 
+			{
+				ExternalActorPaths.Add(FName(*ExternalActorPack));
+			}
+
+			for (FName ExternalActorPath : ExternalActorPaths) 
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Actor path: %s"), *ExternalActorPath.ToString());
+			}
+
+			//TArray<FAssetData> AssetData;
+			//UAssetRegistryImpl AssetRegistry = UAssetRegistryImpl::Get();
+			//FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+			//AssetRegistryModule.Get().GetAssetsByPaths(ExternalActorPaths, AssetData);
+			
+			//AssetRegistryModule.Get().GetAllAssets(AssetData);
+		
+			//UAssetRegistryImpl::Get().GetAssetsByPaths(ExternalActorPaths, *AssetData);
+			//IAssetRegistry::Get()->GetAssetByObjectPath(ExternalActorPaths, *AssetData);
+			//bool test = AssetRegistry->GetAssetsByPaths(ExternalActorPaths, *AssetData, true, false);
+
+			
+			UE_LOG(LogTemp, Warning, TEXT("AssetData size: %d"), AssetData.Num());
+
+			for (FAssetData aData : AssetData) 
+			{
+				AActor* Actor = Cast<AActor>(aData.GetAsset());
+				if (Actor) {
+					UE_LOG(LogTemp, Warning, TEXT("Actor name: %s"), *Actor->GetActorNameOrLabel());
+				}
+			}
 
 			//NumExternalActors += ExternalActorPacks.Num();
 		}
 		*/
+	
+		
 
 		NumOfActors = FString::FromInt(Level->Actors.Num());
 		NumOfBlueprints = FString::FromInt(GetNumBlueprintsInLevel(Level));
