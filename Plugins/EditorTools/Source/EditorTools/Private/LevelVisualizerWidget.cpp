@@ -4,6 +4,7 @@
 #include "LevelVisualizerWidget.h"
 #include "UMG/Public/Components/Button.h"
 #include "UMG/Public/Components/TextBlock.h"
+#include "UMG/Public/Components/CheckBox.h"
 #include "AssetInsightWidget.h"
 
 
@@ -13,16 +14,21 @@ void ULevelVisualizerWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (Button_0) 
+	if (AnalyzeButton) 
 	{
-		Button_0->OnClicked.AddDynamic(this, &ThisClass::UpdateInsightWidget);
+		AnalyzeButton->OnClicked.AddDynamic(this, &ThisClass::UpdateInsightWidget);
 	}	
+
+	if (IncludeNonCollidingCheckBox) 
+	{
+		IncludeNonCollidingCheckBox->SetIsChecked(false);
+	}
 }
 
 void ULevelVisualizerWidget::UpdateInsightWidget() 
 {
-	if (InsightWidget) 
+	if (InsightWidget && IncludeNonCollidingCheckBox)
 	{
-		InsightWidget->UpdateInsights();
+		InsightWidget->UpdateInsights(IncludeNonCollidingCheckBox->IsChecked());
 	}
 }

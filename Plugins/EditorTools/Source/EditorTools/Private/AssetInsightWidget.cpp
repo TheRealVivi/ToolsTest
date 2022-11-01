@@ -10,6 +10,8 @@ void UAssetInsightWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	bIncludeNonColliding = true;
+
 	if (AssetNameText) 
 	{
 		AssetNameText->SetText(FText::FromString(TEXT("<no file selected>")));
@@ -55,6 +57,55 @@ void UAssetInsightWidget::NativeConstruct()
 	
 }
 
+/**
+ *  TODO: Pull actor info from External packages to cover external package user case
+*/
+void UAssetInsightWidget::UpdateInsights(bool bInIncludeNonColliding)
+{
+	bIncludeNonColliding = bInIncludeNonColliding;
+
+	TArray<FAssetData> SelectedObjectsAssetData = UEditorUtilityLibrary::GetSelectedAssetData();
+
+	if (SelectedObjectsAssetData.Num() != 1)
+		return;
+
+	TArray<FString> UpdateInfo;
+	TArray<FString> HierarchySizeDetails;
+	TArray<FString> HierarchyRelationship;
+	FString NumOfActors = "<Select a level>";
+	FString NumOfBlueprints = "<Select a level>";
+	FString LevelSize = "<Select a level>";
+
+	FAssetData SelectedAssetData = SelectedObjectsAssetData[0];
+	UWorld* World = Cast<UWorld>(SelectedAssetData.GetAsset());
+
+	if (World)
+	{
+		ULevel* Level = World->GetCurrentLevel();
+
+		if (Level->IsUsingExternalActors())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Is using external actors"));
+			UE_LOG(LogTemp, Warning, TEXT("Num of actors from external package: %d"), Level->Actors.Num());
+
+		}
+
+		NumOfActors = FString::FromInt(Level->Actors.Num());
+		NumOfBlueprints = FString::FromInt(GetNumBlueprintsInLevel(Level));
+		LevelSize = GetLevelSize(Level).ToString();
+		GetActorHierarchyFootprint(Level, &HierarchySizeDetails);
+		GetActorHierarchyRelationship(Level, &HierarchyRelationship);
+	}
+
+	UpdateInfo.Add(*SelectedAssetData.AssetName.ToString());
+	UpdateInfo.Add(FString::FromInt(SelectedAssetData.GetPackage()->GetFileSize()));
+	UpdateInfo.Add(NumOfActors);
+	UpdateInfo.Add(NumOfBlueprints);
+	UpdateInfo.Add(LevelSize);
+
+	UpdateTextBlocks(UpdateInfo, &HierarchySizeDetails, &HierarchyRelationship);
+}
+
 /** Updates widget text blocks with data from parameter array */
 void UAssetInsightWidget::UpdateTextBlocks(TArray<FString> InUpdates, TArray<FString>* InHierarchyUpdates, TArray<FString>* InHierarchyRelationship) 
 {
@@ -95,6 +146,10 @@ void UAssetInsightWidget::UpdateTextBlocks(TArray<FString> InUpdates, TArray<FSt
 	}
 }
 
+/**
+ * \Brief:   Prepares string with desired formatting for ActorHierarchyDetails TextBlock
+ * \Returns: FString desired formatting for ActorHierarchyDetails TextBlock
+ */
 FString UAssetInsightWidget::UpdateHierarchyDetails(TArray<FString>* InHierarchyUpdates) 
 {
 	FString HierarchyDetails = "";
@@ -114,6 +169,10 @@ FString UAssetInsightWidget::UpdateHierarchyDetails(TArray<FString>* InHierarchy
 	return HierarchyDetails;
 }
 
+/**
+ * \Brief:   Prepares string with desired formatting for ActorHierarchyRelationship TextBlock
+ * \Returns: FString desired formatting for ActorHierarchyRelationship TextBlock
+ */
 FString UAssetInsightWidget::UpdateHierarchyRelationship(TArray<FString>* InHierarchyRelationship) 
 {
 	FString HierarchyDetails = "";
@@ -133,7 +192,12 @@ FString UAssetInsightWidget::UpdateHierarchyRelationship(TArray<FString>* InHier
 	return HierarchyDetails;
 }
 
-/** Copy/paste from FLevelBounds class. */
+/**
+ * \Note:    Copy/paste from FLevelBounds class.
+ * \Brief:   Calculates level bounds
+ *           If bIncludeNonColliding is true, will add bounding boxes of non-colliding actors
+ * \Returns: An FBox with all of the level actors bounding boxes summed up
+*/
 FBox UAssetInsightWidget::CalculateLevelBounds(const ULevel* InLevel)
 {
 	FBox LevelBounds(ForceInit);
@@ -148,7 +212,7 @@ FBox UAssetInsightWidget::CalculateLevelBounds(const ULevel* InLevel)
 			if (Actor && Actor->IsLevelBoundsRelevant())
 			{
 				// Sum up components bounding boxes
-				FBox ActorBox = Actor->GetComponentsBoundingBox(true);
+				FBox ActorBox = Actor->GetComponentsBoundingBox(bIncludeNonColliding);
 				if (ActorBox.IsValid)
 				{
 					LevelBounds += ActorBox;
@@ -160,22 +224,29 @@ FBox UAssetInsightWidget::CalculateLevelBounds(const ULevel* InLevel)
 	return LevelBounds;
 }
 
+/**
+ * \Brief:   Uses a TMap to map out the Level's Actor hierarchy
+ * \Returns: TMap with Level's Actor hierarchy and summed up bounding boxes
+*/
 TMap<FString, FBox> UAssetInsightWidget::CalculateLevelHierarchyBounds(const ULevel* InLevel)
 {
 	TMap<FString, FBox> HierarchyBounds;
 
 	for (AActor* Actor : InLevel->Actors)
 	{
-		FString ActorFolderName = Actor->GetFolder().ToString();
-		if (!HierarchyBounds.Contains(ActorFolderName))
+		if (Actor && Actor->IsLevelBoundsRelevant()) 
 		{
-			HierarchyBounds.Add(ActorFolderName, Actor->GetComponentsBoundingBox());
-			//UE_LOG(LogTemp, Warning, TEXT("Newly added Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
-		}
-		else
-		{
-			HierarchyBounds[ActorFolderName] += Actor->GetComponentsBoundingBox();
-			//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
+			FString ActorFolderName = Actor->GetFolder().ToString();
+			if (!HierarchyBounds.Contains(ActorFolderName))
+			{
+				HierarchyBounds.Add(ActorFolderName, Actor->GetComponentsBoundingBox(bIncludeNonColliding));
+				//UE_LOG(LogTemp, Warning, TEXT("Newly added Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
+			}
+			else
+			{
+				HierarchyBounds[ActorFolderName] += Actor->GetComponentsBoundingBox(bIncludeNonColliding);
+				//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
+			}
 		}
 		//UE_LOG(LogTemp, Warning, TEXT("Folder name: %s"), *Actor->GetFolder().ToString());
 	}
@@ -183,6 +254,10 @@ TMap<FString, FBox> UAssetInsightWidget::CalculateLevelHierarchyBounds(const ULe
 	return HierarchyBounds;
 }
 
+/**
+ * \Brief:   Uses a TMap to map out the Level's Actor hierarchy relationship
+ * \Returns: TMap with Level's Actor hierarchy relationships
+*/
 TMap<FString, TArray<FString>> UAssetInsightWidget::CalculateLevelHierarchyRelationship(const ULevel* InLevel) 
 {
 	TMap<FString, TArray<FString>> HierarchyRelationships;
@@ -204,81 +279,15 @@ TMap<FString, TArray<FString>> UAssetInsightWidget::CalculateLevelHierarchyRelat
 			HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
 			//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
 		}
-
-		//UE_LOG(LogTemp, Warning, TEXT("Folder name: %s"), *Actor->GetFolder().ToString());
 	}
-
-	/*
-	for (TPair<FString, TArray<FString>> HierarchyPair : HierarchyRelationships)
-	{
-		FString Relationship = "";
-		for (int32 i = 0; i < HierarchyPair.Value.Num(); i++)
-		{
-			if (i == 0)
-			{
-				Relationship += HierarchyPair.Key + ":\n";
-			}
-
-			Relationship += "  -" + HierarchyPair.Value[i] + "\n";
-		}
-		HierarchyRelationship.Add(Relationship);
-	}
-
-	HierarchyRelationship.StableSort();
-	*/
 
 	return HierarchyRelationships;
 }
 
-
-
-/** 
- *  TODO: Pull actor info from External packages to cover external package user case
+/**
+ * \Brief:   Uses a TMap to map out the Level's Actor hierarchy
+ *           Given TArray reference will be filled with the hierarchy relationships
 */
-void UAssetInsightWidget::UpdateInsights()
-{
-	TArray<FAssetData> SelectedObjectsAssetData = UEditorUtilityLibrary::GetSelectedAssetData();
-	
-	if (SelectedObjectsAssetData.Num() != 1)
-		return;
-
-	TArray<FString> UpdateInfo;
-	TArray<FString> HierarchySizeDetails;
-	TArray<FString> HierarchyRelationship;
-	FString NumOfActors = "<Select a level>";
-	FString NumOfBlueprints = "<Select a level>";
-	FString LevelSize = "<Select a level>";
-
-	FAssetData SelectedAssetData = SelectedObjectsAssetData[0];
-	UWorld* World = Cast<UWorld>(SelectedAssetData.GetAsset());
-
-	if (World)
-	{
-		ULevel* Level = World->GetCurrentLevel();
-
-		if(Level->IsUsingExternalActors()) 
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Is using external actors"));
-			UE_LOG(LogTemp, Warning, TEXT("Num of actors from external package: %d"), Level->Actors.Num());
-			
-		}			
-
-		NumOfActors = FString::FromInt(Level->Actors.Num());
-		NumOfBlueprints = FString::FromInt(GetNumBlueprintsInLevel(Level));
-		LevelSize = GetLevelBounds(Level, &SelectedAssetData).ToString();
-		GetActorHierarchyFootprint(Level, &HierarchySizeDetails);
-		GetActorHierarchyRelationship(Level, &HierarchyRelationship);
-	}
-
-	UpdateInfo.Add(*SelectedAssetData.AssetName.ToString());
-	UpdateInfo.Add(FString::FromInt(SelectedAssetData.GetPackage()->GetFileSize()));
-	UpdateInfo.Add(NumOfActors);
-	UpdateInfo.Add(NumOfBlueprints);
-	UpdateInfo.Add(LevelSize);
-
-	UpdateTextBlocks(UpdateInfo, &HierarchySizeDetails, &HierarchyRelationship);
-}
-
 void UAssetInsightWidget::GetActorHierarchyRelationship(const ULevel* InLevel, TArray<FString>* OutHierarchyRelationship) 
 {
 	TMap<FString, TArray<FString>> HierarchyRelationships = CalculateLevelHierarchyRelationship(InLevel);
@@ -293,7 +302,7 @@ void UAssetInsightWidget::GetActorHierarchyRelationship(const ULevel* InLevel, T
 				Relationship += HierarchyPair.Key + ":\n";
 			}
 			
-			Relationship += "  -" + HierarchyPair.Value[i] + "\n";
+			Relationship += "  - " + HierarchyPair.Value[i] + "\n";
 		}
 
 		OutHierarchyRelationship->Add(Relationship);
@@ -302,6 +311,10 @@ void UAssetInsightWidget::GetActorHierarchyRelationship(const ULevel* InLevel, T
 	OutHierarchyRelationship->StableSort();
 }
 
+/**
+ * \Brief:   Uses a TMap to map out the Level's Actor hierarchy,
+ *           Given TArray reference will be filled with hierarchy and it's size
+*/
 void UAssetInsightWidget::GetActorHierarchyFootprint(const ULevel* InLevel, TArray<FString>* OutHierarchyFootprint) 
 {
 	TMap<FString, FBox> HierarchyBounds = CalculateLevelHierarchyBounds(InLevel);
@@ -312,12 +325,34 @@ void UAssetInsightWidget::GetActorHierarchyFootprint(const ULevel* InLevel, TArr
 	}
 }
 
-/** Checks each actor in level to see if it is attached to a blueprint; returns -1 if InLevel is null*/
-int32 UAssetInsightWidget::GetNumBlueprintsInLevel(const ULevel* InLevel) 
+
+/** Checks if level's asset data has tag values for level bounds, if not, calculates them
+ *  Returns level bounds as a FVector3d
+*/
+FVector3d UAssetInsightWidget::GetLevelSize(const ULevel* InLevel)
+{
+	FVector3d levelSize;
+	FBox levelBounds;
+
+	if (InLevel) 
+	{
+		levelBounds = CalculateLevelBounds(InLevel);
+	}
+
+	levelSize = levelBounds.GetSize();
+
+	return levelSize;
+}
+
+/**
+ * \Brief:   Sums up number of blueprints referenced InLevel
+ * \Returns: Returns number of blueprints. Will return -1 if InLevel is null
+*/
+int32 UAssetInsightWidget::GetNumBlueprintsInLevel(const ULevel* InLevel)
 {
 	int32 numOfBlueprints = -1;
 
-	if (InLevel) 
+	if (InLevel)
 	{
 		numOfBlueprints = 0;
 		TArray<AActor*> LevelActors = InLevel->Actors;
@@ -332,37 +367,4 @@ int32 UAssetInsightWidget::GetNumBlueprintsInLevel(const ULevel* InLevel)
 	}
 
 	return numOfBlueprints;
-}
-
-/** Checks if level's asset data has tag values for level bounds, if not, calculates them
- *  Returns level bounds as a FVector3d
-*/
-FVector3d UAssetInsightWidget::GetLevelBounds(const ULevel* InLevel, FAssetData* LevelAssetData)
-{
-	FVector3d levelSize;
-	FBox levelBounds;
-
-	FString LevelBoundsLocationStr;
-	static const FName NAME_LevelBoundsLocation(TEXT("LevelBoundsLocation"));
-
-	FString LevelBoundsExtentStr;
-	static const FName NAME_LevelBoundsExtent(TEXT("LevelBoundsExtent"));
-
-	if (LevelAssetData && InLevel) 
-	{
-
-		if (LevelAssetData->GetTagValue(NAME_LevelBoundsLocation, LevelBoundsLocationStr) &&
-			LevelAssetData->GetTagValue(NAME_LevelBoundsExtent, LevelBoundsExtentStr))
-		{
-			ULevel::GetLevelBoundsFromAsset(*LevelAssetData, levelBounds);
-		}
-		else
-		{
-			levelBounds = CalculateLevelBounds(InLevel);
-		}
-	}
-
-	levelSize = levelBounds.GetSize();
-
-	return levelSize;
 }

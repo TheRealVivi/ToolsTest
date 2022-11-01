@@ -17,8 +17,11 @@ class EDITORTOOLS_API ULevelVisualizerWidget : public UEditorUtilityWidget
 public:	
 	virtual void NativeConstruct() override;
 
-	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
-	class UButton* Button_0;
+	UPROPERTY(BlueprintReadOnly, meta=(BindWidget))
+	class UButton* AnalyzeButton;
+
+	UPROPERTY(BlueprintReadOnly, meta=(BindWidget))
+	class UCheckBox* IncludeNonCollidingCheckBox;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UAssetInsightWidget* InsightWidget;
