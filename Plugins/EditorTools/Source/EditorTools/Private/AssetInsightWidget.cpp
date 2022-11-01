@@ -163,29 +163,23 @@ FBox UAssetInsightWidget::CalculateLevelBounds(const ULevel* InLevel)
 TMap<FString, FBox> UAssetInsightWidget::CalculateLevelHierarchyBounds(const ULevel* InLevel)
 {
 	TMap<FString, FBox> HierarchyBounds;
-	// Calculate hierarchy bounds using folders
-	if (InLevel->IsUsingActorFolders())
+
+	for (AActor* Actor : InLevel->Actors)
 	{
-		// use a TMap<Folder Name, Bounds> to calculate hierarchy bounds
-
-		for (AActor* Actor : InLevel->Actors)
+		FString ActorFolderName = Actor->GetFolder().ToString();
+		if (!HierarchyBounds.Contains(ActorFolderName))
 		{
-			FString ActorFolderName = Actor->GetFolder().ToString();
-			if (!HierarchyBounds.Contains(ActorFolderName))
-			{
-				HierarchyBounds.Add(ActorFolderName, Actor->GetComponentsBoundingBox());
-				//UE_LOG(LogTemp, Warning, TEXT("Newly added Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
-			}
-			else
-			{
-				HierarchyBounds[ActorFolderName] += Actor->GetComponentsBoundingBox();
-				//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
-			}
-
-			//UE_LOG(LogTemp, Warning, TEXT("Folder name: %s"), *Actor->GetFolder().ToString());
+			HierarchyBounds.Add(ActorFolderName, Actor->GetComponentsBoundingBox());
+			//UE_LOG(LogTemp, Warning, TEXT("Newly added Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
 		}
-
+		else
+		{
+			HierarchyBounds[ActorFolderName] += Actor->GetComponentsBoundingBox();
+			//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
+		}
+		//UE_LOG(LogTemp, Warning, TEXT("Folder name: %s"), *Actor->GetFolder().ToString());
 	}
+
 	return HierarchyBounds;
 }
 
@@ -193,47 +187,45 @@ TMap<FString, TArray<FString>> UAssetInsightWidget::CalculateLevelHierarchyRelat
 {
 	TMap<FString, TArray<FString>> HierarchyRelationships;
 	TArray<FString> HierarchyRelationship;
-	// Calculate hierarchy bounds using folders
-	if (InLevel->IsUsingActorFolders())
+
+	for (AActor* Actor : InLevel->Actors)
 	{
-		// use a TMap<Folder Name, Bounds> to calculate hierarchy bounds
-
-		for (AActor* Actor : InLevel->Actors)
+		//UE_LOG(LogTemp, Warning, TEXT("Actor: %s, ParentActor: %s"), *Actor->GetParentActor()->GetActorNameOrLabel());
+		FString ActorFolderName = Actor->GetFolder().ToString();
+		//UE_LOG(LogTemp, Warning, TEXT("Actor name: %s, Actor folder path: %s"), *Actor->GetActorNameOrLabel(), *Actor->GetFolderPath().ToString());
+		if (!HierarchyRelationships.Contains(ActorFolderName))
 		{
-			FString ActorFolderName = Actor->GetFolder().ToString();
-			//UE_LOG(LogTemp, Warning, TEXT("Actor name: %s, Actor folder path: %s"), *Actor->GetActorNameOrLabel(), *Actor->GetFolderPath().ToString());
-			if (!HierarchyRelationships.Contains(ActorFolderName))
-			{
-				HierarchyRelationships.Add(ActorFolderName);
-				HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
-				//UE_LOG(LogTemp, Warning, TEXT("Newly added Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
-			}
-			else
-			{
-				HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
-				//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
-			}
-
-			//UE_LOG(LogTemp, Warning, TEXT("Folder name: %s"), *Actor->GetFolder().ToString());
+			HierarchyRelationships.Add(ActorFolderName);
+			HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("Newly added Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
+		}
+		else
+		{
+			HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
+			//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
 		}
 
-		for (TPair<FString, TArray<FString>> HierarchyPair : HierarchyRelationships)
-		{
-			FString Relationship = "";
-			for (int32 i = 0; i < HierarchyPair.Value.Num(); i++)
-			{
-				if (i == 0)
-				{
-					Relationship += HierarchyPair.Key + ":\n";
-				}
-
-				Relationship += "  -" + HierarchyPair.Value[i] + "\n";
-			}
-			HierarchyRelationship.Add(Relationship);
-		}
-
-		HierarchyRelationship.StableSort();
+		//UE_LOG(LogTemp, Warning, TEXT("Folder name: %s"), *Actor->GetFolder().ToString());
 	}
+
+	/*
+	for (TPair<FString, TArray<FString>> HierarchyPair : HierarchyRelationships)
+	{
+		FString Relationship = "";
+		for (int32 i = 0; i < HierarchyPair.Value.Num(); i++)
+		{
+			if (i == 0)
+			{
+				Relationship += HierarchyPair.Key + ":\n";
+			}
+
+			Relationship += "  -" + HierarchyPair.Value[i] + "\n";
+		}
+		HierarchyRelationship.Add(Relationship);
+	}
+
+	HierarchyRelationship.StableSort();
+	*/
 
 	return HierarchyRelationships;
 }
