@@ -83,12 +83,17 @@ void UAssetInsightWidget::UpdateInsights(bool bInIncludeNonColliding)
 	{
 		ULevel* Level = World->GetCurrentLevel();
 
+		/* Attempting to gather external actor details
+		 * Able to get total number of external actors when not loaded, 
+		 * Searching how to load these details into an actor and gather more info
+		int32 NumExternalActors = 0;
 		if (Level->IsUsingExternalActors())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Is using external actors"));
-			UE_LOG(LogTemp, Warning, TEXT("Num of actors from external package: %d"), Level->Actors.Num());
+		{	
+			TArray<FString> ExternalActorPacks = Level->GetOnDiskExternalActorPackages();
 
+			//NumExternalActors += ExternalActorPacks.Num();
 		}
+		*/
 
 		NumOfActors = FString::FromInt(Level->Actors.Num());
 		NumOfBlueprints = FString::FromInt(GetNumBlueprintsInLevel(Level));
@@ -240,15 +245,12 @@ TMap<FString, FBox> UAssetInsightWidget::CalculateLevelHierarchyBounds(const ULe
 			if (!HierarchyBounds.Contains(ActorFolderName))
 			{
 				HierarchyBounds.Add(ActorFolderName, Actor->GetComponentsBoundingBox(bIncludeNonColliding));
-				//UE_LOG(LogTemp, Warning, TEXT("Newly added Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
 			}
 			else
 			{
 				HierarchyBounds[ActorFolderName] += Actor->GetComponentsBoundingBox(bIncludeNonColliding);
-				//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
 			}
 		}
-		//UE_LOG(LogTemp, Warning, TEXT("Folder name: %s"), *Actor->GetFolder().ToString());
 	}
 
 	return HierarchyBounds;
@@ -265,19 +267,18 @@ TMap<FString, TArray<FString>> UAssetInsightWidget::CalculateLevelHierarchyRelat
 
 	for (AActor* Actor : InLevel->Actors)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Actor: %s, ParentActor: %s"), *Actor->GetParentActor()->GetActorNameOrLabel());
-		FString ActorFolderName = Actor->GetFolder().ToString();
-		//UE_LOG(LogTemp, Warning, TEXT("Actor name: %s, Actor folder path: %s"), *Actor->GetActorNameOrLabel(), *Actor->GetFolderPath().ToString());
-		if (!HierarchyRelationships.Contains(ActorFolderName))
+		if (Actor) 
 		{
-			HierarchyRelationships.Add(ActorFolderName);
-			HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
-			//UE_LOG(LogTemp, Warning, TEXT("Newly added Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
-		}
-		else
-		{
-			HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
-			//UE_LOG(LogTemp, Warning, TEXT("Existing Folder name: %s New bounds size: %s"), *ActorFolderName, *HierarchyBounds[ActorFolderName].GetSize().ToString());
+			FString ActorFolderName = Actor->GetFolder().ToString();
+			if (!HierarchyRelationships.Contains(ActorFolderName))
+			{
+				HierarchyRelationships.Add(ActorFolderName);
+				HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
+			}
+			else
+			{
+				HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
+			}
 		}
 	}
 
@@ -357,11 +358,14 @@ int32 UAssetInsightWidget::GetNumBlueprintsInLevel(const ULevel* InLevel)
 		numOfBlueprints = 0;
 		TArray<AActor*> LevelActors = InLevel->Actors;
 
-		for (AActor* a : LevelActors)
+		for (AActor* Actor : LevelActors)
 		{
-			if (a->GetArchetype()->IsInBlueprint())
+			if (Actor) 
 			{
-				numOfBlueprints++;
+				if (Actor->GetArchetype()->IsInBlueprint())
+				{
+					numOfBlueprints++;
+				}
 			}
 		}
 	}
