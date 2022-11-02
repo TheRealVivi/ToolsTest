@@ -307,18 +307,19 @@ TMap<FString, TArray<FString>> UAssetInsightWidget::CalculateLevelHierarchyRelat
 		if (Actor) 
 		{
 			FString ActorFolderName = Actor->GetFolder().ToString();
+
 			if (!HierarchyRelationships.Contains(ActorFolderName))
 			{
 				HierarchyRelationships.Add(ActorFolderName);
-				HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
+				HierarchyRelationships[ActorFolderName].Add(FString::Printf(TEXT("%s\t\t\t\t\t%s"), *Actor->GetActorNameOrLabel(), *Actor->GetActorLocation().ToString()));
 			}
 			else
 			{
-				HierarchyRelationships[ActorFolderName].Add(Actor->GetActorNameOrLabel() + " " + Actor->GetActorLocation().ToString());
+				HierarchyRelationships[ActorFolderName].Add(FString::Printf(TEXT("%s\t\t\t\t\t%s"), *Actor->GetActorNameOrLabel(), *Actor->GetActorLocation().ToString()));
 			}
 		}
 	}
-
+	
 	return HierarchyRelationships;
 }
 
