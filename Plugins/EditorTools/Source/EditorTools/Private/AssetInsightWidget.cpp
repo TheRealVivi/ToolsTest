@@ -47,14 +47,7 @@ void UAssetInsightWidget::NativeConstruct()
 	{
 		ActorHierarchyRelationship->SetText(FText::FromString(TEXT("<No asset selected - Select a level for details>")));
 	}
-	
-	/*
-	if (ActorHierarchyDetails) 
-	{
-		TArray<FString> DefaultData = { "Hierarchy size: N/A", "Select level asset to load" };
-		ActorHierarchyDetails->SetTextForTextBlocks(DefaultData);
-	}
-	*/
+
 	
 }
 
